@@ -8,6 +8,24 @@
 
 import UIKit
 
+@IBDesignable
+class Button_Custom: UIButton {
+    
+    @IBInspectable var textColor: UIColor?
+    
+    @IBInspectable var cornerRadius: CGFloat = 0 {
+        didSet {
+            layer.cornerRadius = cornerRadius
+        }
+    }
+    
+    @IBInspectable var borderWidth: CGFloat = 0 {
+        didSet {
+            layer.borderWidth = borderWidth
+        }
+    }
+}
+
 class ViewController: UIViewController {
     
     @IBOutlet weak var result: UILabel!
@@ -26,11 +44,8 @@ class ViewController: UIViewController {
     var meattype: Int!
     var ingredient: Int!
     var rice: Int!
-    let nameFood = ["メンチかつ丼", "タレカツ丼", "タルタル丼", "うどん"]
-    let keyAFood = ["肉", "肉", "肉", "麺"]
-    let keyBFood = ["とり", "豚", "とり", "麺"]
-    let moneyFood = [300, 300, 300, 300]
-    let picture = ["mennchi", "タレカツ丼", "maruichi", "maruichi"]
+    
+    var food = [[String]]()
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -44,6 +59,28 @@ class ViewController: UIViewController {
         pButtun.isEnabled = true
         ibuttun.isEnabled = true
         rbuttun.isEnabled = true
+        
+        //外部ファイルの追加
+        var csvLines = [String]()
+        
+        guard let path = Bundle.main.path(forResource:"food", ofType:"csv") else {
+            print("csvファイルがないよ")
+            return
+        }
+        
+        do {
+            let csvString = try String(contentsOfFile: path, encoding: String.Encoding.utf8)
+            csvLines = csvString.components(separatedBy: .newlines)
+            csvLines.removeLast()
+        } catch let error as NSError {
+            print("エラー: \(error)")
+            return
+        }
+        for animalData in csvLines {
+            food.append(animalData.components(separatedBy: ","))
+        }
+        let re = food.count
+        print(re)
     }
     
     
@@ -80,12 +117,16 @@ class ViewController: UIViewController {
     }
     @IBAction func noodleButtun(_ sender: UIButton) {
         type = 2
-        meattype = 0
+        meattype = 3
         mbuttun.isEnabled = true
         nbuttun.isEnabled = false
         cButtun.isEnabled = true
         pButtun.isEnabled = true
         if type == 2 {
+            rice = 0
+            ingredient = 0
+            rbuttun.isOn = false
+            ibuttun.isOn = false
             ibuttun.isEnabled = false
             rbuttun.isEnabled = false
         }
@@ -95,7 +136,11 @@ class ViewController: UIViewController {
         cButtun.isEnabled = false
         pButtun.isEnabled = true
         if type == 2 {
-            meattype = 0
+            meattype = 3
+            rice = 0
+            ingredient = 0
+            rbuttun.isOn = false
+            ibuttun.isOn = false
             cButtun.isEnabled = true
         }
     }
@@ -104,7 +149,11 @@ class ViewController: UIViewController {
         cButtun.isEnabled = true
         pButtun.isEnabled = false
         if type == 2 {
-            meattype = 0
+            meattype = 3
+            rice = 0
+            ingredient = 0
+            rbuttun.isOn = false
+            ibuttun.isOn = false
             pButtun.isEnabled = true
         }
     }
@@ -116,17 +165,17 @@ class ViewController: UIViewController {
         
         let foodnumber = foodSelect()
         var payment = 0
-        result.text = nameFood[foodnumber]
+        result.text = food[foodnumber][0]
         if ingredient == 1 {
-            payment = moneyFood[foodnumber] + 100
+            payment = Int(food[foodnumber][3])! + 100
         } else {
-            payment = moneyFood[foodnumber]
+            payment = Int(food[foodnumber][3])!
         }
         if rice == 1 {
             payment += 100
         }
         moneyresult.text = String(payment)
-        let foodpicture = picture[foodnumber]
+        let foodpicture = food[foodnumber][4]
         let image = UIImage(named: foodpicture)
         image1.image = image
         mbuttun.isEnabled = true
@@ -135,23 +184,20 @@ class ViewController: UIViewController {
         pButtun.isEnabled = true
         ibuttun.isEnabled = true
         rbuttun.isEnabled = true
-        
+        rbuttun.isOn = false
+        ibuttun.isOn = false
         type = 0
-        if ingredient == 1 {
-            type = 1
-        }
-        if rice == 1 {
-            type = 1
-        }
+        rice = 0
+        ingredient = 0
         meattype = 0
     }
     private func foodSelect() -> Int {
         var keyword1: String!
         var keyword2: String!
         var resultA: Set<Int> = []
-        var resultB: Set<Int> = []
         var count = 0
         var sub2: Int!
+        var i = 0
         if type == 1 {
             keyword1 = "肉"
         } else if type == 2 {
@@ -163,88 +209,60 @@ class ViewController: UIViewController {
             keyword2 = "とり"
         } else if meattype == 2{
             keyword2 = "豚"
-        } else if meattype == 0{
+        } else if meattype == 3{
             keyword2 = "麺"
+        } else if meattype == 0{
+            keyword2 = "other"
         }
         
-        if type == 1 && meattype == 0 {
+        if (type == 1 && meattype == 0) || (type == 2 && meattype == 0) {
             count = 0
-            for keyA in keyAFood {
-                if keyA == keyword1 {
+            i = 0
+            let ele = food.count
+            while i < ele {
+                if keyword1 == food[i][1] {
                     resultA.insert(count)
                 }
                 count += 1
+                i += 1
             }
+            
             let tmp = Array(resultA)
             sub2 = tmp[Int(arc4random()) % tmp.count]
             return sub2
         }
-        if type == 2 && meattype == 0 {
-            count = 0
-            for keyA in keyAFood {
-                if keyA == keyword1 {
-                    resultA.insert(count)
-                }
-                count += 1
-            }
-            let tmp = Array(resultA)
-            sub2 = tmp[Int(arc4random()) % tmp.count]
-            return sub2
-        }
+       
         if type == 0 && meattype == 0 {
             count = 0
-            for _ in keyAFood {
+            i = 0
+            let ele = food.count
+            while i < ele {
                 resultA.insert(count)
                 count += 1
+                i += 1
             }
             let tmp = Array(resultA)
             sub2 = tmp[Int(arc4random()) % tmp.count]
             
             return sub2
         }
-        if type == 0 && meattype == 1 {
-            count = 0
-            for keyA in keyBFood {
-                if keyA == keyword2 {
-                    resultA.insert(count)
-                }
-                count += 1
-            }
-            let tmp = Array(resultA)
-            sub2 = tmp[Int(arc4random()) % tmp.count]
-            return sub2
-        }
-        if type == 0 && meattype == 2 {
-            count = 0
-            for keyA in keyBFood {
-                if keyA == keyword2 {
-                    resultA.insert(count)
-                }
-                count += 1
-            }
-            let tmp = Array(resultA)
-            sub2 = tmp[Int(arc4random()) % tmp.count]
-            return sub2
-        }
-        count = 0
-        for keyA in keyAFood {
-            if keyA == keyword1 {
-                resultA.insert(count)
-            }
-            count += 1
-        }
-        count = 0
-        for keyB in keyBFood {
-            if keyB == keyword2 {
-                resultB.insert(count)
-            }
-            count += 1
-        }
-        let sub = resultA.intersection(resultB)
-        let sub1 = Array(sub)
-        sub2 = sub1[Int(arc4random()) % sub1.count]
         
-        return sub2
+        if (type == 0 && meattype == 1) || (type == 0 && meattype == 2) || (type == 1 && meattype == 1) || (type == 1 && meattype == 2) || (type == 2 && meattype == 3) {
+            count = 0
+            i = 0
+            let ele = food.count
+            while i < ele {
+                if keyword2 == food[i][2] {
+                    resultA.insert(count)
+                }
+                count += 1
+                i += 1
+            }
+            let tmp = Array(resultA)
+            sub2 = tmp[Int(arc4random()) % tmp.count]
+            return sub2
+        }
+     return 0
     }
 }
 
